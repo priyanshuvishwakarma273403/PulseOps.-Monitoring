@@ -1,0 +1,258 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pulseops-api-gateway
+  namespace: pulseops
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pulseops-api-gateway
+  template:
+    metadata:
+      labels:
+        app: pulseops-api-gateway
+    spec:
+      containers:
+        - name: gateway
+          image: pulseops-api-gateway:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: pulseops-config
+                  key: REDIS_HOST
+            - name: SPRING_REDIS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: pulseops-config
+                  key: REDIS_PORT
+            - name: PULSEOPS_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: pulseops-secrets
+                  key: PULSEOPS_JWT_SECRET
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pulseops-api-gateway
+  namespace: pulseops
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: pulseops-api-gateway
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pulseops-auth-service
+  namespace: pulseops
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pulseops-auth-service
+  template:
+    metadata:
+      labels:
+        app: pulseops-auth-service
+    spec:
+      containers:
+        - name: auth
+          image: pulseops-auth-service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8081
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:mysql://pulseops-mysql:3306/pulseops?useSSL=false&allowPublicKeyRetrieval=true"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: "root"
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pulseops-secrets
+                  key: MYSQL_ROOT_PASSWORD
+            - name: SPRING_REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: pulseops-config
+                  key: REDIS_HOST
+            - name: SPRING_REDIS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: pulseops-config
+                  key: REDIS_PORT
+            - name: PULSEOPS_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: pulseops-secrets
+                  key: PULSEOPS_JWT_SECRET
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pulseops-auth-service
+  namespace: pulseops
+spec:
+  ports:
+    - port: 8081
+  selector:
+    app: pulseops-auth-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pulseops-monitoring-service
+  namespace: pulseops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pulseops-monitoring-service
+  template:
+    metadata:
+      labels:
+        app: pulseops-monitoring-service
+    spec:
+      containers:
+        - name: monitoring
+          image: pulseops-monitoring-service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8083
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:mysql://pulseops-mysql:3306/pulseops?useSSL=false&allowPublicKeyRetrieval=true"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: "root"
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pulseops-secrets
+                  key: MYSQL_ROOT_PASSWORD
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: pulseops-config
+                  key: KAFKA_BOOTSTRAP_SERVERS
+            - name: PULSEOPS_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: pulseops-secrets
+                  key: PULSEOPS_JWT_SECRET
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pulseops-monitoring-service
+  namespace: pulseops
+spec:
+  ports:
+    - port: 8083
+  selector:
+    app: pulseops-monitoring-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pulseops-alert-service
+  namespace: pulseops
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pulseops-alert-service
+  template:
+    metadata:
+      labels:
+        app: pulseops-alert-service
+    spec:
+      containers:
+        - name: alert
+          image: pulseops-alert-service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8084
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:mysql://pulseops-mysql:3306/pulseops?useSSL=false&allowPublicKeyRetrieval=true"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: "root"
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pulseops-secrets
+                  key: MYSQL_ROOT_PASSWORD
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: pulseops-config
+                  key: KAFKA_BOOTSTRAP_SERVERS
+            - name: PULSEOPS_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: pulseops-secrets
+                  key: PULSEOPS_JWT_SECRET
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pulseops-alert-service
+  namespace: pulseops
+spec:
+  ports:
+    - port: 8084
+  selector:
+    app: pulseops-alert-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pulseops-websocket-service
+  namespace: pulseops
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pulseops-websocket-service
+  template:
+    metadata:
+      labels:
+        app: pulseops-websocket-service
+    spec:
+      containers:
+        - name: websocket
+          image: pulseops-websocket-service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8086
+          env:
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: pulseops-config
+                  key: KAFKA_BOOTSTRAP_SERVERS
+            - name: PULSEOPS_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: pulseops-secrets
+                  key: PULSEOPS_JWT_SECRET
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pulseops-websocket-service
+  namespace: pulseops
+spec:
+  ports:
+    - port: 8086
+  selector:
+    app: pulseops-websocket-service

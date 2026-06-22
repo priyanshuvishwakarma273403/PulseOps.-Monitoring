@@ -1,0 +1,151 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pulseops-mysql
+  namespace: pulseops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pulseops-mysql
+  template:
+    metadata:
+      labels:
+        app: pulseops-mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pulseops-secrets
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: pulseops-config
+                  key: MYSQL_DATABASE
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pulseops-mysql
+  namespace: pulseops
+spec:
+  ports:
+    - port: 3306
+  selector:
+    app: pulseops-mysql
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pulseops-redis
+  namespace: pulseops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pulseops-redis
+  template:
+    metadata:
+      labels:
+        app: pulseops-redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7.0-alpine
+          ports:
+            - containerPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pulseops-redis
+  namespace: pulseops
+spec:
+  ports:
+    - port: 6379
+  selector:
+    app: pulseops-redis
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pulseops-zookeeper
+  namespace: pulseops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pulseops-zookeeper
+  template:
+    metadata:
+      labels:
+        app: pulseops-zookeeper
+    spec:
+      containers:
+        - name: zookeeper
+          image: confluentinc/cp-zookeeper:7.3.0
+          ports:
+            - containerPort: 2181
+          env:
+            - name: ZOOKEEPER_CLIENT_PORT
+              value: "2181"
+            - name: ZOOKEEPER_TICK_TIME
+              value: "2000"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pulseops-zookeeper
+  namespace: pulseops
+spec:
+  ports:
+    - port: 2181
+  selector:
+    app: pulseops-zookeeper
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pulseops-kafka
+  namespace: pulseops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pulseops-kafka
+  template:
+    metadata:
+      labels:
+        app: pulseops-kafka
+    spec:
+      containers:
+        - name: kafka
+          image: confluentinc/cp-kafka:7.3.0
+          ports:
+            - containerPort: 9092
+          env:
+            - name: KAFKA_BROKER_ID
+              value: "1"
+            - name: KAFKA_ZOOKEEPER_CONNECT
+              value: "pulseops-zookeeper:2181"
+            - name: KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://pulseops-kafka:9092
+            - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+              value: "1"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pulseops-kafka
+  namespace: pulseops
+spec:
+  ports:
+    - port: 9092
+  selector:
+    app: pulseops-kafka

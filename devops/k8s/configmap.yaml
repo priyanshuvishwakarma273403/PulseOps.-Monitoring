@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pulseops-config
+  namespace: pulseops
+data:
+  MYSQL_HOST: "pulseops-mysql"
+  MYSQL_PORT: "3306"
+  MYSQL_DATABASE: "pulseops"
+  REDIS_HOST: "pulseops-redis"
+  REDIS_PORT: "6379"
+  KAFKA_BOOTSTRAP_SERVERS: "pulseops-kafka:9092"
+  AUTH_SERVICE_URL: "http://pulseops-auth-service:8081"
+  MONITORING_SERVICE_URL: "http://pulseops-monitoring-service:8083"
+  ALERT_SERVICE_URL: "http://pulseops-alert-service:8084"
+  WEBSOCKET_SERVICE_URL: "ws://pulseops-websocket-service:8086"
